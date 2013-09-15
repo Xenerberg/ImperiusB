@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 
 import com.beta.Controllability.ControlValuePacket;
+import com.beta.Controllability.ControllerMode;
 import com.beta.Controllability.IController;
 import com.beta.activities.R;
 
@@ -29,7 +30,7 @@ import com.beta.activities.R;
  *Function: Allows the user to interact with an XY-grid layout to control parameters 
  *Author: Hrishik Mishra 
  */
-public class XYController extends UIController implements GestureDetector.OnGestureListener, IController {
+public class XYController extends UIController implements GestureDetector.OnGestureListener {
 	
 	
 	//Private Member for shape rendering process
@@ -91,6 +92,20 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	private static final boolean b_DEFAULT_MULTITOUCH_m = false;
 	private static final String s_DEBUG_TAG_M = "XYCONTROLLER";
 	
+	//Application specific variables
+	private static HashMap<Integer, ControllerMode> xyControllerMapObj_m;
+	//Static section
+	static{
+		XYController.xyControllerMapObj_m = new HashMap<Integer, ControllerMode>(5, 0.75f);
+		//Initial capacity = 5, Load factor = 0.75f	
+		//Initialize the SubController map instance
+		XYController.xyControllerMapObj_m.put(XYSubController.X_RANGE_CHANGE.getValue() , ControllerMode.CONTINUOUS );
+		XYController.xyControllerMapObj_m.put(XYSubController.Y_RANGE_CHANGE.getValue() , ControllerMode.CONTINUOUS );
+		XYController.xyControllerMapObj_m.put(XYSubController.DOUBLE_TAP.getValue() , ControllerMode.DIGITAL );
+		XYController.xyControllerMapObj_m.put(XYSubController.SINGLE_TAP.getValue() , ControllerMode.DIGITAL );
+		XYController.xyControllerMapObj_m.put(XYSubController.FLING.getValue() , ControllerMode.DIGITAL );
+		XYController.xyControllerMapObj_m.put(XYSubController.ACTION_UP.getValue() , ControllerMode.DIGITAL );
+	}
 	
 	
 	//Constructor ( Parameterized )
@@ -98,7 +113,11 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	//as following
 	public XYController(Context context, AttributeSet attributeSet){
 		super(context, attributeSet);
-		this.e_UIControllerType_m = UIControllerType.XY_CONTROLLER;
+		//Set base class elements for application performance
+		this.e_UIControllerType_m = UIControllerType.XY_CONTROLLER;		
+			
+		this.fn_SetSubControllerMap();
+		
 		this.fn_RendererInit();
 		originGridLineCoordArray_m = new float[8];
 		gestureDectorObj_m = new GestureDetector(this);
@@ -227,8 +246,18 @@ public class XYController extends UIController implements GestureDetector.OnGest
 				Log.d(s_DEBUG_TAG_M, "Velocity-X: " + VelocityTrackerCompat.getXVelocity(velocityTrackerObj_m, i_Pointer_f));
 				Log.d(s_DEBUG_TAG_M, "Velocity-Y: " + VelocityTrackerCompat.getYVelocity(velocityTrackerObj_m, i_Pointer_f));
 				//For animation on touch down and up
-				d_XYCoordinates_m[0] = event.getX();
-				this.d_XYCoordinates_m[1] = event.getY();				
+				
+				this.d_XYCoordinates_m[0] = event.getX();
+				this.d_XYCoordinates_m[1] = event.getY();
+				this.controlValuePacketObj_m = new ControlValuePacket(d_XYCoordinates_m[0]);
+				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
+				this.controlValuePacketObj_m.setSubControllerID(XYSubController.X_RANGE_CHANGE.getValue());
+				this.queueObj_m.offer(controlValuePacketObj_m);
+				this.controlValuePacketObj_m = new ControlValuePacket(d_XYCoordinates_m[1]);
+				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
+				this.controlValuePacketObj_m.setSubControllerID(XYSubController.Y_RANGE_CHANGE.getValue());
+				this.queueObj_m.offer(controlValuePacketObj_m);
+				
 				this.invalidate();
 				//
 				return true;
@@ -738,25 +767,46 @@ public class XYController extends UIController implements GestureDetector.OnGest
 
 
 	@Override
-	public Queue getQueue() {
-		return this.queueObj_m;		
+	public Queue<ControlValuePacket> getQueue() {
+		return IController.queueObj_m;		
 	}
 
 
 	@Override
-	public HashMap fn_FetchSubControllerMap() {
+	public HashMap<Integer, ControllerMode> fn_FetchSubControllerMap() {
 		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public void fn_SetSubControllerMap() {
-		// TODO Auto-generated method stub
+		if ( this.subControllerMapObj_m == null || this.subControllerMapObj_m.isEmpty())
+			this.fn_SetSubControllerMap();
+		
+		return this.subControllerMapObj_m;	
 		
 	}
 
 
+	/* Function: To set the SubControllerMap for reference in application
+	 * (non-Javadoc)
+	 * @see com.beta.Controllability.IController#fn_SetSubControllerMap()	 * 
+	 */
+	@Override
+	public void fn_SetSubControllerMap() {
+		if ( this.subControllerMapObj_m != null || !this.subControllerMapObj_m.isEmpty())
+			return;
+		// TODO Auto-generated method stub
+		this.subControllerMapObj_m = this.xyControllerMapObj_m;
+		
+	}
+	
+	enum XYSubController{
+		X_RANGE_CHANGE(1), Y_RANGE_CHANGE(2), DOUBLE_TAP(3), SINGLE_TAP(4), FLING(5), ACTION_UP(6);
+		
+		private int subControllerID;
+		XYSubController(int subControllerID){
+			this.subControllerID = subControllerID;
+		}
+		public int getValue(){
+			return this.subControllerID;
+		}
+	}
 
 }
 

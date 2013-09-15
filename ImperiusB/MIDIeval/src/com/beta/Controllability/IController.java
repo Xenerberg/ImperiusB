@@ -26,7 +26,7 @@ public interface IController {
 	/*Function fn_FetchSubControllerMap
 	 *Function: Fetch the subcontroller map in a hash map of <int, String> type
 	 */
-	HashMap fn_FetchSubControllerMap();
+	HashMap<Integer, ControllerMode> fn_FetchSubControllerMap();
 	/*Function: fn_FetchSubControllerMap
 	 *Function: Each Controller will have to create it's own SubController map setting 
 	 */
@@ -36,7 +36,7 @@ public interface IController {
 	/**
 	 * @return the queueObj_m
 	 */
-	Queue getQueue();
+	Queue<ControlValuePacket> getQueue();
 	
 	
 
