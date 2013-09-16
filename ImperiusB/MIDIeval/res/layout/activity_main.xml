@@ -9,11 +9,41 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity" >
 
-    
-    <com.beta.activities.XYController
-        android:layout_width = "wrap_content"
-        android:layout_height = "wrap_content"
+    <com.beta.UIControls.XYController
         android:id="@+id/xy_controller"
-        />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    
+    <Switch
+        android:id="@+id/switch1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/xy_controller"
+        android:switchMinWidth = "50dp"
+        android:switchPadding="50dp"
+        android:minWidth="50dp"
+        android:text="X-Var" />
+
+    <Switch
+        android:id="@+id/Switch02"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/switch1"
+        android:switchMinWidth = "50dp"
+        android:switchPadding="50dp"
+        android:minWidth="50dp"
+        android:text="Y-Var" />
+    <Switch
+        android:id="@+id/Switch03"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/Switch02"
+        android:switchMinWidth = "50dp"
+        android:minWidth="50dp"
+        android:text="Double tap" />
 
 </RelativeLayout>

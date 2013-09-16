@@ -19,6 +19,7 @@ import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
+import android.view.View;
 
 import com.beta.Controllability.ControlValuePacket;
 import com.beta.Controllability.ControllerMode;
@@ -116,7 +117,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		//Set base class elements for application performance
 		this.e_UIControllerType_m = UIControllerType.XY_CONTROLLER;		
 			
-		this.fn_SetSubControllerMap();
+		
 		
 		this.fn_RendererInit();
 		originGridLineCoordArray_m = new float[8];
@@ -206,6 +207,18 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		}
 	}
 	
+	/*Function: onFinishInflate() from View class
+	 *It is overridden here to allow the subController mapping to be initialised after Constructor call
+	 * (non-Javadoc)
+	 * @see android.view.View#onFinishInflate()
+	 */
+	@Override
+	public void onFinishInflate(){
+		super.onFinishInflate();
+		this.fn_SetSubControllerMap();
+		
+		
+	}
 	
 	//Event Handlers
 	@Override
@@ -775,7 +788,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	@Override
 	public HashMap<Integer, ControllerMode> fn_FetchSubControllerMap() {
 		// TODO Auto-generated method stub
-		if ( this.subControllerMapObj_m == null || this.subControllerMapObj_m.isEmpty())
+		if ( this.subControllerMapObj_m == null )
 			this.fn_SetSubControllerMap();
 		
 		return this.subControllerMapObj_m;	
@@ -789,7 +802,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	 */
 	@Override
 	public void fn_SetSubControllerMap() {
-		if ( this.subControllerMapObj_m != null || !this.subControllerMapObj_m.isEmpty())
+		if ( this.subControllerMapObj_m != null )
 			return;
 		// TODO Auto-generated method stub
 		this.subControllerMapObj_m = this.xyControllerMapObj_m;

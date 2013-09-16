@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import com.beta.UIControls.XYController;
@@ -15,14 +17,42 @@ import com.beta.imperius.AbstractSingleMIDIActivity;
 public class MainActivity extends AbstractSingleMIDIActivity {
 	
 	private XYController xyControllerObj_m;
+	private Switch switchX;
+	private Switch switchY;
+	private Bundle bundleForDialogObj_m = new Bundle();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+			
 		this.xyControllerObj_m = (XYController)this.findViewById(R.id.xy_controller);
+		this.switchX = (Switch)this.findViewById(R.id.switch1);
+		this.switchY = (Switch)this.findViewById(R.id.Switch02);
+		this.switchX.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				bundleForDialogObj_m.putString("asshole", "Please enter x value");
+				SelectorDialog selectorDialog = new SelectorDialog(bundleForDialogObj_m);
+				selectorDialog.show(getFragmentManager(), DISPLAY_SERVICE);
+			}
+			
+		});
 		
+		this.switchY.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				bundleForDialogObj_m.putString("asshole", "Please enter y value");
+				SelectorDialog selectorDialog = new SelectorDialog(bundleForDialogObj_m);
+				selectorDialog.show(getFragmentManager(), DISPLAY_SERVICE);
+			}
+			
+		});
 		xyControllerObj_m.setOnTouchListener(new OnTouchListener(){
 
 			@Override
