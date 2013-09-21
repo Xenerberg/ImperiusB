@@ -1,7 +1,7 @@
 package com.beta.Controllability;
 
 import java.util.HashMap;
-import java.util.PriorityQueue;
+import java.util.LinkedList;
 import java.util.Queue;
 
 
@@ -12,10 +12,11 @@ import java.util.Queue;
  */
 public interface IController {
 	//Members
-	static final Queue<ControlValuePacket> queueObj_m = new PriorityQueue<ControlValuePacket>();
+	static final Queue<ControlValuePacket> queueObj_m = new LinkedList<ControlValuePacket>();
 	Object lockObject_m = new Object();
 	
-	
+	//Normalizing function to convert native controller value to a range [-1, 1]
+	float fn_Normalize(float rawData);
 	
 	//Queue operations which will be implemented by controller classes 
 	//based on the data they generate as Controllers.

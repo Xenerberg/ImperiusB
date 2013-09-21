@@ -11,9 +11,8 @@
 
     <com.beta.UIControls.XYController
         android:id="@+id/xy_controller"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
     
     <Switch
         android:id="@+id/switch1"

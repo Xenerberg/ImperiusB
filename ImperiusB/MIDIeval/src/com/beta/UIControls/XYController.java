@@ -54,6 +54,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	private Paint paintObjOnTouch_m;
 	private RadialGradient radialGradientForOnTouch_f;
 	float[] d_XYCoordinates_m = new float[2];
+	private boolean b_IsNotRendered = true;
 	
 	//Constants used in rendering process
 	private static final int i_SECONDARY_GRID_HALFCOUNT_m = 5;
@@ -70,11 +71,13 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	private int i_XMax_m;
 	private int i_XMin_m;
 	private boolean b_IsMultiTouch_m;
-	private Origin e_Origin_m;
+	private Origin e_Origin_m = Origin.CENTER;
 	private int i_OriginX_m;
 	private int i_OriginY_m;
 	private String s_FramePicturePath_m;
 	private String s_GridPicturePath_m;
+	private int[] i_OffsetVector_m = new int[4];
+	private int[] i_MeasureVector_m = new int[2];
 	
 	
 	//For events
@@ -95,6 +98,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	
 	//Application specific variables
 	private static HashMap<Integer, ControllerMode> xyControllerMapObj_m;
+	private boolean b_IsTouchOutside_m = false;
 	//Static section
 	static{
 		XYController.xyControllerMapObj_m = new HashMap<Integer, ControllerMode>(5, 0.75f);
@@ -120,6 +124,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		
 		
 		this.fn_RendererInit();
+		this.setPadding(12, 12, 12,12);
 		originGridLineCoordArray_m = new float[8];
 		gestureDectorObj_m = new GestureDetector(this);
 		TypedArray typeArrayObj_f = context.getTheme().obtainStyledAttributes(attributeSet, R.styleable.XYController, 0, 0);
@@ -229,12 +234,13 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		int i_Index_f = event.getActionIndex();
 		//Index to the Pointer to get Pressure, size etc information about UP/DOWN events
 		int i_Pointer_f = event.getPointerId(i_Index_f);//Pointer to the information about event.
-		gestureDectorObj_m.onTouchEvent(event);	
-		
+		//gestureDectorObj_m.onTouchEvent(event);	
+		boolean b_IsOutsideBounds_f = false;
 		
 		switch ( i_Action_f )
 		{
 			case (MotionEvent.ACTION_DOWN):
+				b_IsTouchOutside_m = false;
 				Log.d(s_DEBUG_TAG_M, "Action was down");
 				
 				if ( this.velocityTrackerObj_m == null )
@@ -248,7 +254,7 @@ public class XYController extends UIController implements GestureDetector.OnGest
 				}
 				return true;
 			case (MotionEvent.ACTION_MOVE):
-				Log.d(s_DEBUG_TAG_M, "Action was move");
+				//Log.d(s_DEBUG_TAG_M, "Action was move");
 				//ComputeCurrentVelocity() fetches the current velocity of movement
 				//This can be used to fetch invidual component velocities.
 				this.velocityTrackerObj_m.addMovement(event);
@@ -256,22 +262,26 @@ public class XYController extends UIController implements GestureDetector.OnGest
 				//1: pixels per millisecond, 1000:pixels per second
 				//It is advisable to use VelocityTrackerCompat static function, although
 				//velocityTracker object instance can be used for the same purpose
-				Log.d(s_DEBUG_TAG_M, "Velocity-X: " + VelocityTrackerCompat.getXVelocity(velocityTrackerObj_m, i_Pointer_f));
-				Log.d(s_DEBUG_TAG_M, "Velocity-Y: " + VelocityTrackerCompat.getYVelocity(velocityTrackerObj_m, i_Pointer_f));
+				//Log.d(s_DEBUG_TAG_M, "Velocity-X: " + VelocityTrackerCompat.getXVelocity(velocityTrackerObj_m, i_Pointer_f));
+				//Log.d(s_DEBUG_TAG_M, "Velocity-Y: " + VelocityTrackerCompat.getYVelocity(velocityTrackerObj_m, i_Pointer_f));
 				//For animation on touch down and up
-				
+				if ( this.b_IsTouchOutside_m )
+					return false;
+				this.d_XYCoordinates_m[0]= this.fn_GetX(event.getX() );
+     			this.d_XYCoordinates_m[1] = this.fn_GetY(event.getY());
+     			Log.i("XY_CONTROLLER", "X," + d_XYCoordinates_m[0] + ",Y," + d_XYCoordinates_m[1] );
 				this.d_XYCoordinates_m[0] = event.getX();
 				this.d_XYCoordinates_m[1] = event.getY();
-				this.controlValuePacketObj_m = new ControlValuePacket(d_XYCoordinates_m[0]);
+				this.controlValuePacketObj_m = new ControlValuePacket(this.fn_Normalize(this.fn_GetX(event.getX() )));
 				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
 				this.controlValuePacketObj_m.setSubControllerID(XYSubController.X_RANGE_CHANGE.getValue());
 				this.queueObj_m.offer(controlValuePacketObj_m);
-				this.controlValuePacketObj_m = new ControlValuePacket(d_XYCoordinates_m[1]);
-				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
-				this.controlValuePacketObj_m.setSubControllerID(XYSubController.Y_RANGE_CHANGE.getValue());
-				this.queueObj_m.offer(controlValuePacketObj_m);
+//				this.controlValuePacketObj_m = new ControlValuePacket(d_XYCoordinates_m[1]);
+//				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
+//				this.controlValuePacketObj_m.setSubControllerID(XYSubController.Y_RANGE_CHANGE.getValue());
+//				this.queueObj_m.offer(controlValuePacketObj_m);
 				
-				this.invalidate();
+				invalidate();
 				//
 				return true;
 			case ( MotionEvent.ACTION_UP):
@@ -353,8 +363,13 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	
 	@Override
 	protected void onLayout(boolean isChanged, int left, int top, int right, int bottom){
+		
+		this.i_OffsetVector_m[0] = left;
+		this.i_OffsetVector_m[1] = top;
+		this.i_OffsetVector_m[2] = left - this.i_MeasureVector_m[0];
+		this.i_OffsetVector_m[3] = right - this.i_MeasureVector_m[1];
 		int i_ViewWidth_f = MeasureSpec.getSize(right - 2*left);
-		int i_ViewHeight_f = MeasureSpec.getSize(bottom -  2*top);
+		int i_ViewHeight_f = MeasureSpec.getSize(bottom -  1*top);
 		int i_ViewSize_f = Math.min(i_ViewWidth_f, i_ViewHeight_f);
 		setLayoutGridSideLength(i_ViewSize_f);
 		//Store the measured dimensions suggested by the Android framework
@@ -385,10 +400,12 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		
+		this.b_IsNotRendered = true;
 		int i_ParentWidth_f = MeasureSpec.getSize(widthMeasureSpec);
 		int i_ParentHeight_f = MeasureSpec.getSize(heightMeasureSpec);
 		int i_ViewSizde_f = Math.min(i_ParentWidth_f, i_ParentHeight_f);
-		
+		this.i_MeasureVector_m[0] = i_ViewSizde_f;
+		this.i_MeasureVector_m[1] = i_ViewSizde_f;
 		originGridLineCoordArray_m[0] = i_ViewSizde_f/2;
 		originGridLineCoordArray_m[1] = 0;
 		originGridLineCoordArray_m[2] = i_ViewSizde_f/2;
@@ -410,19 +427,22 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		canvasObj_m = canvas;//This has to be checked later on. PLEASE DO!!!!
 		
 		super.onDraw(canvas);
-		int i_NumberSquare_f = 5;
+		
+//		if ( this.isLayoutRequested() || this.b_IsNotRendered ){
+			int i_NumberSquare_f = 5;
 		//canvas.drawRect(0.0f, 0.0f, 100.0f, 100.0f, paintObj_m);		
 		//this.paintRadialGradient_m.setShader(this.radialGradientBackground_f);
-		this.paintRadialGradient_m.setShader(this.radialGradientBackground_f);
-		//canvas.drawPaint(this.paintRadialGradient_m);
-		canvas.drawRect(this.borderRectangle_m, this.paintRadialGradient_m);	
-		
-		this.fn_RenderGridLines(GRIDLINE_TYPE.PRIMARY, canvas);
-		this.fn_RenderGridLines(GRIDLINE_TYPE.SECONDARY, canvas);		
-		this.fn_RenderGridLines(GRIDLINE_TYPE.TERTIARY, canvas);
-		this.fn_RenderGridLines(GRIDLINE_TYPE.QUARTERNARY, canvas);
-		this.fn_RenderGridLines(GRIDLINE_TYPE.PENTENARY, canvas);
-		
+			this.paintRadialGradient_m.setShader(this.radialGradientBackground_f);
+			//canvas.drawPaint(this.paintRadialGradient_m);
+			canvas.drawRect(this.borderRectangle_m, this.paintRadialGradient_m);	
+			
+			this.fn_RenderGridLines(GRIDLINE_TYPE.PRIMARY, canvas);
+			this.fn_RenderGridLines(GRIDLINE_TYPE.SECONDARY, canvas);		
+			this.fn_RenderGridLines(GRIDLINE_TYPE.TERTIARY, canvas);
+			this.fn_RenderGridLines(GRIDLINE_TYPE.QUARTERNARY, canvas);
+			this.fn_RenderGridLines(GRIDLINE_TYPE.PENTENARY, canvas);
+			this.b_IsNotRendered = false;
+//		}
 
 		this.canvasObj_m.drawCircle(this.d_XYCoordinates_m[0], this.d_XYCoordinates_m[1], 30, paintObjOnTouch_m);
 
@@ -512,7 +532,6 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		this.paintObjOnTouch_m.setStyle(Paint.Style.STROKE);
 		this.paintObjOnTouch_m.setStrokeWidth(3.0f);
 
-		
 	}
 	
 	/*Method: fn_RefreshLayout()
@@ -523,6 +542,43 @@ public class XYController extends UIController implements GestureDetector.OnGest
 		invalidate();
 		requestLayout();
 	}
+	
+	public float fn_GetX(float x){
+		switch ( this.e_Origin_m ){
+		case CENTER:
+			x = x - this.i_OffsetVector_m[0] - this.i_LayoutGridSideLength_m/2;
+			if ( Math.abs(x) > this.i_LayoutGridSideLength_m/2){
+				x =  Math.signum(x)*this.i_LayoutGridSideLength_m/2;
+				b_IsTouchOutside_m = true;
+				
+			}
+			this.d_XYCoordinates_m[0] = x;
+			return (x);
+		default:
+			return -10f;
+			
+		}
+		
+	}
+	
+	public float fn_GetY(float y){
+		switch ( this.e_Origin_m ){
+		case CENTER:
+			y = y - this.i_OffsetVector_m[1]- this.i_LayoutGridSideLength_m/2;
+			if ( Math.abs(y) > this.i_LayoutGridSideLength_m/2){
+				y =  Math.signum(y)*this.i_LayoutGridSideLength_m/2;
+				b_IsTouchOutside_m = true;
+			}
+			this.d_XYCoordinates_m[1] = y;
+			return (y);
+		default:
+			return -10f;
+			
+		}
+	}
+	
+	
+	
 	//Property settings for the custom XY-controller view
 	/**
 	 * @return the i_LayoutHeight_m
@@ -788,10 +844,10 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	@Override
 	public HashMap<Integer, ControllerMode> fn_FetchSubControllerMap() {
 		// TODO Auto-generated method stub
-		if ( this.subControllerMapObj_m == null )
+		if ( this.getSubControllerMap() == null )
 			this.fn_SetSubControllerMap();
 		
-		return this.subControllerMapObj_m;	
+		return this.getSubControllerMap();	
 		
 	}
 
@@ -802,24 +858,21 @@ public class XYController extends UIController implements GestureDetector.OnGest
 	 */
 	@Override
 	public void fn_SetSubControllerMap() {
-		if ( this.subControllerMapObj_m != null )
+		if ( this.getSubControllerMap() != null )
 			return;
 		// TODO Auto-generated method stub
-		this.subControllerMapObj_m = this.xyControllerMapObj_m;
+		this.setSubControllerMap(this.xyControllerMapObj_m);
+		
+	}
+
+	@Override
+	public float fn_Normalize(float rawData) {
+		// TODO Auto-generated method stub
+		return rawData/(this.i_LayoutGridSideLength_m/2);
 		
 	}
 	
-	enum XYSubController{
-		X_RANGE_CHANGE(1), Y_RANGE_CHANGE(2), DOUBLE_TAP(3), SINGLE_TAP(4), FLING(5), ACTION_UP(6);
-		
-		private int subControllerID;
-		XYSubController(int subControllerID){
-			this.subControllerID = subControllerID;
-		}
-		public int getValue(){
-			return this.subControllerID;
-		}
-	}
+
+	
 
 }
-
