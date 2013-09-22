@@ -1,0 +1,5 @@
+package com.beta.Controllability;
+
+public enum UIControllerType {
+	XY_CONTROLLER, KNOB_CONTROLLER, FADER_CONTROLLER
+}

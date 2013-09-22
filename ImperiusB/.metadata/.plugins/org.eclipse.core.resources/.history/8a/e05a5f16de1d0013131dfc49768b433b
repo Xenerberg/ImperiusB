@@ -1,0 +1,9 @@
+package com.beta.Controllability;
+
+import android.content.Context;
+import android.view.View;
+
+public abstract class UIController extends View {
+	
+
+}

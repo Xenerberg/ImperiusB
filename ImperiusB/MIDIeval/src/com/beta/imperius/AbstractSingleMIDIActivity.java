@@ -24,14 +24,17 @@ import com.beta.listener.OnMIDIDeviceAttachedListenerImpl;
 import com.beta.listener.OnMIDIDeviceDetachedListener;
 import com.beta.listener.OnMIDIDeviceDetachedListenerImpl;
 import com.beta.listener.OnMidiInputEventListener;
+import com.beta.thread.DeviceWriteThread;
+import com.beta.thread.IQueueWatcherListener;
 import com.beta.thread.MIDIDeviceConnectionWatcher;
+import com.beta.thread.QueueWatcherTimerTask;
 import com.beta.usb.util.DeviceFilter;
 import com.beta.util.UsbDeviceDetails;
 import com.beta.util.UsbMIDIDeviceUtil;
 
 public abstract class AbstractSingleMIDIActivity extends Activity implements
 		OnMidiInputEventListener, OnMIDIDeviceAttachedListener,
-		OnMIDIDeviceDetachedListener {
+		OnMIDIDeviceDetachedListener, IQueueWatcherListener {
 	
 	private UsbDevice usbDeviceObj_m;
 	private UsbDeviceConnection usbDeviceConnectionObj_m;
@@ -44,6 +47,9 @@ public abstract class AbstractSingleMIDIActivity extends Activity implements
 	protected UsbManager usbManagerObj_m;
 	private UsbCommunication usbCommunicationObj_m;
 	protected UsbDeviceDetails usbMIDIDeviceDetails_m;
+	private QueueWatcherTimerTask queueWatcherTimerTaskObj_m;
+	private DeviceWriteThread deviceWriteThread_m;
+	
 	
 	@Override
 	protected void onCreate(final Bundle savedInstanceState){
@@ -52,6 +58,7 @@ public abstract class AbstractSingleMIDIActivity extends Activity implements
 		//Fetch the USB Service from the application context;
 		usbManagerObj_m = (UsbManager)this.getApplicationContext().getSystemService(Service.USB_SERVICE);
 		List <DeviceFilter> deviceFilterList_f = null;
+		
 		try{
 			deviceFilterList_f = DeviceFilter.getDeviceFilters(getApplicationContext());
 			if ( deviceFilterList_f.size() == 0){
@@ -109,6 +116,16 @@ public abstract class AbstractSingleMIDIActivity extends Activity implements
 			usbMIDIDeviceDetails_m.setManufacturer(rawDeviceDetails_f.get("Manufacturer"));
 			usbMIDIDeviceDetails_m.setProduct(rawDeviceDetails_f.get("Product"));
 		}
+		
+		this.deviceWriteThread_m = new DeviceWriteThread();
+		this.deviceWriteThread_m.setMidiOutputDevice(midiOutputDeviceObj_m);
+		this.deviceWriteThread_m.setIsToBeSuspended(true);
+		this.deviceWriteThread_m.start();
+		//Start a queueWatcher Timer task to seek the queue state periodically
+		queueWatcherTimerTaskObj_m = QueueWatcherTimerTask.fn_FetchTimerTaskInstance();
+		this.queueWatcherTimerTaskObj_m.setQueueWatcherListenerRef(this);
+		queueWatcherTimerTaskObj_m.fn_StartTimerTask();
+		
 		
 	}
 	
@@ -228,5 +245,27 @@ public abstract class AbstractSingleMIDIActivity extends Activity implements
 		// TODO Auto-generated method stub
 
 	}
-
+	
+	/*Set of methods implemented as a IQueueWatcherListener 
+	 *This will allow the abstract activity to know about current queue status and 
+	 *command the write thread to work accordingly 
+	 * (non-Javadoc)
+	 * @see com.beta.thread.IQueueWatcherListener#fn_QueueIsNowEmpty()
+	 */
+	@Override
+	public void fn_QueueIsNowEmpty(){
+		this.deviceWriteThread_m.setIsToBeSuspended(true);
+	}
+	@Override
+	public void fn_QueueIsNowFilling(){
+		this.deviceWriteThread_m.setIsToBeSuspended(false);
+		
+		this.deviceWriteThread_m.getDeviceWriteLockObj().lock();
+		try{
+			this.deviceWriteThread_m.getQueueNotFullCondition().signal();
+		}
+		finally{
+			this.deviceWriteThread_m.getDeviceWriteLockObj().unlock();
+		}
+	}
 }

@@ -275,11 +275,11 @@ public class XYController extends UIController implements GestureDetector.OnGest
 				this.controlValuePacketObj_m = new ControlValuePacket(this.fn_Normalize(this.fn_GetX(event.getX() )));
 				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
 				this.controlValuePacketObj_m.setSubControllerID(XYSubController.X_RANGE_CHANGE.getValue());
-				this.queueObj_m.offer(controlValuePacketObj_m);
-//				this.controlValuePacketObj_m = new ControlValuePacket(d_XYCoordinates_m[1]);
-//				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
-//				this.controlValuePacketObj_m.setSubControllerID(XYSubController.Y_RANGE_CHANGE.getValue());
-//				this.queueObj_m.offer(controlValuePacketObj_m);
+				IController.queueObj_m.offer(controlValuePacketObj_m);
+				this.controlValuePacketObj_m = new ControlValuePacket(this.fn_Normalize(this.fn_GetY(event.getY() )));
+				this.controlValuePacketObj_m.setControllerType(e_ControllerType_m);
+				this.controlValuePacketObj_m.setSubControllerID(XYSubController.Y_RANGE_CHANGE.getValue());
+				IController.queueObj_m.offer(controlValuePacketObj_m);
 				
 				invalidate();
 				//
